@@ -12,6 +12,13 @@
 ##    S-FLAG = 1 character Source Flag 
 ##    OBS-TIME = 4-character time of observation in hour-minute format (i.e. 0700 =7:00 am)
 
+# TODO
+#   -- read/save by chunks
+#   -- SQL index
+#   -- pick stations, element(s)
+#   -- column elements, one row per date 
+#   -- HDF5 versions
+
 ###############################
 
 import os
@@ -35,6 +42,68 @@ from pandas import HDFStore, DataFrame
 import h5py
 
 ########################################################################
+
+
+def dloadGHCND(year1='current', year2=None, outpath=None):
+    # Multiyear with outpath
+    #out = r' .... '
+    if year2: 
+        for year in range(year1,year2+1):
+            dloadGHCND1(year, outpath = outpath)
+    else:
+            dloadGHCND1(year1, outpath = outpath)
+        
+
+def dloadGHCND1(year='current', outfile=None, outpath=None):
+    """
+    Downloads GHCN Daily Weather station data in compressed (.gz) form
+    from NOAA-NCDC ftp location
+      ftp://ftp.ncdc.noaa.gov/pub/data/ghcn/daily/by_year
+    The file is either a full year or the current year to date.
+    Current year is the default.
+    Renames local file using GHCND prefix  2017.csv.gz --> GHCND2017.csv.gz
+    """
+
+    import  os.path
+    import datetime as dt
+    from urllib import request
+
+    dt0= dt.datetime.now()
+    if year == 'current':
+         year = dt0.year       
+
+    rootURL = "ftp://ftp.ncdc.noaa.gov/pub/data/ghcn/daily/by_year"   # base URL for all files
+    filesuffix = ".csv.gz" # suffix for all of the raw files 
+    saveVersion= '' 
+    
+    # Start by constructing filenames with paths
+    filename = str(year) + filesuffix
+    fullURL = rootURL + "/" + str(year) + filesuffix
+    if outfile == None or not outfile:
+        outfile = r'GHCND' + str(year) + saveVersion + filesuffix
+    if outpath:
+        outfile = os.path.join(outpath,outfile)
+    else:
+        pass
+        
+    # TRY Download of file with basic error handling
+    try:
+        print('Trying to download NOAA-NCDC GHCN Daily file for year: %s' % year) 
+        print('  Root URL: %s ' % rootURL) 
+        print('  Filename: %s ' % filename) 
+        print('  Outfile: %s ' % outfile) 
+        a = request.urlretrieve(url=fullURL, filename = outfile)
+    except OSError as e:
+        print(e)
+    except:
+        print('Error retrieving and/or saving', fullURL, filename, a, end='\n')
+    else: # if no errors, then
+        msg= "   ... retrieved  ... wrote output to: %s "  % outfile
+        print ( msg )        
+        dt1= dt.datetime.now()
+        print ('Finished in %s seconds' % (dt1-dt0).seconds )
+        print ('Date/time:', dt1)
+        
 
 def UncompressGz(file1,file2):
     #Uncompress CSV.GZ -> .CSV 
@@ -116,6 +185,11 @@ def readSQLdb(db, table= None):
     data = read_sql('select * from %s' % table, dbcon)
     dbcon.close()
     return data
+
+#### read/save by chunks
+
+
+### HDF5 stuff
 
 #######################################################################
 
