@@ -1,0 +1,102 @@
+## SQL DB utility  
+
+###############################
+
+import os
+import datetime as dt
+import time
+from math import floor
+import sqlite3 as sql
+import shutil
+import numpy as np
+import pandas as pd
+from pandas import HDFStore, DataFrame
+import h5py
+
+########################################################################
+
+
+def load():
+
+    from urllib import request
+
+    rootURL = --base URL 
+        
+    # TRY Download of file with basic error handling
+    try:
+        a = request.urlretrieve(url=fullURL, filename = outfile)
+    except OSError as e:
+        print(e)
+    except:
+        pass
+        #print('Error)
+    else: # if no errors, then
+        print ('Date:', dt1)
+        
+def UncompressGz(file1,file2):
+    #Uncompress CSV.GZ -> .CSV 
+    file2 = os.path.join(fdir ,'GHCND' + str(year) + '.csv')
+    outfh = open(file2, 'wb')
+    with gzip.open(file1, 'rb') as infh:
+        shutil.copyfileobj(infh, outfh)
+    outfh.close()
+    fh = open(file2)
+    fstats = os.fstat( fh.fileno()  )
+    fsize = fstats.st_size / (1000**2)
+    print ("  created: %s" % time.ctime(os.path.getctime(file2)) )
+    print ("  size: %s MB" % fsize)
+    fh.close()
+
+def ChunkGenerator(reader, chunksize= 1000):
+    """ 
+    Chunk Generator. Take a iterable reader (such as fh.readlines, or CSV reader)
+    and yield  chunksize slices. 
+    """
+    chunksize = int(chunksize)
+    chunk = []
+    for i, line in enumerate(reader):
+        if (i % chunksize == 0 and i > 0):
+            yield chunk
+            del chunk[:]
+        chunk.append(line)
+    yield chunk
+
+def ReadCSV(file):
+    fh = open(file,'r')
+    chunk_size = int(1E6)
+    wdat=[]
+    #CSV module read with Chunk Generator
+    for k, chunk in enumerate(ChunkGenerator(fh,chunk_size)):
+        reader = csv.reader(chunk, delimiter=',')
+        chunk2 = list(reader)   
+        wdat.extend(chunk2)
+        if k % 10 == 0:
+            pass
+            #print(k, len(chunk2), len(wdat))
+    fh.close()
+    return wdat
+
+def saveSQLdb(db, data, table= None):  
+    from sqlite3 import connect
+    # save as SQLite database, need chunksize
+    if isinstance(db,str):
+        dbcon = connect(file2b)
+    else:
+        dbcon = db
+    chunksize = int(10**6) 
+    data.to_sql(table, dbcon, chunksize= chunksize)
+    dbcon.close()
+
+def readSQLdb(db, table= None):  
+    from sqlite3 import connect
+    from pandas import read_sql
+    # Read as SQLite database, need chunksize
+    if isinstance(db,str):
+        dbcon = connect(file2b)
+    else:
+        dbcon = db
+    #chunksize = int(10**6) 
+    data = read_sql('select * from %s' % table, dbcon)
+    dbcon.close()
+    return data
+
